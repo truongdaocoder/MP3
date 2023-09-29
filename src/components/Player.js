@@ -54,6 +54,21 @@ const Player = () => {
     audio.load();
   }, [audio]);
   useEffect(() => {
+    const handleEnded = () => {
+      if (isShuffle) {
+        handleNextSongRandom();
+      } else if (isRepeat) {
+        audio.play();
+      } else {
+        audio.pause();
+        dispatch(acitons.play(false));
+      }
+    };
+    audio.addEventListener("ended", handleEnded);
+    return () => audio.removeEventListener("ended", handleEnded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audio, isRepeat, isShuffle]);
+  useEffect(() => {
     const handleUpdate = () => {
       let percent =
         Math.round((audio.currentTime * 10000) / songInfo?.duration) / 100;
@@ -66,7 +81,6 @@ const Player = () => {
     }
     return () => {
       audio.removeEventListener("timeupdate", handleUpdate);
-      console.log("xong");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audio, isPlaying]);
@@ -91,31 +105,45 @@ const Player = () => {
   const handleNextSong = () => {
     if (songs) {
       // eslint-disable-next-line no-unused-vars
-      let currentSongIndex;
-      songs?.forEach((item, index) => {
-        if (item.encodeId === curSongId) {
-          currentSongIndex = index;
-        }
-      });
-      dispatch(acitons.setCurSongId(songs[currentSongIndex + 1].encodeId));
+      if (isShuffle) {
+        handleNextSongRandom();
+      } else {
+        let currentSongIndex;
+        songs?.forEach((item, index) => {
+          if (item.encodeId === curSongId) {
+            currentSongIndex = index;
+          }
+        });
+        dispatch(acitons.setCurSongId(songs[currentSongIndex + 1].encodeId));
+      }
       dispatch(acitons.play(true));
     }
   };
   const handlePrevSong = () => {
     if (songs) {
       // eslint-disable-next-line no-unused-vars
-      let currentSongIndex;
-      songs?.forEach((item, index) => {
-        if (item.encodeId === curSongId) {
-          currentSongIndex = index;
-        }
-      });
-      dispatch(acitons.setCurSongId(songs[currentSongIndex + 1].encodeId));
+      if (isShuffle) {
+        handleNextSongRandom();
+      } else {
+        let currentSongIndex;
+        songs?.forEach((item, index) => {
+          if (item.encodeId === curSongId) {
+            currentSongIndex = index;
+          }
+        });
+        dispatch(acitons.setCurSongId(songs[currentSongIndex - 1].encodeId));
+      }
+
       dispatch(acitons.play(true));
     }
   };
   const handleShuffle = () => {
     setIsShuffle((prev) => !prev);
+  };
+  const handleRepeat = () => setIsRepeat((prev) => !prev);
+  const handleNextSongRandom = () => {
+    const random = Math.round(Math.random() * songs.length) - 1;
+    dispatch(acitons.setCurSongId(songs[random].encodeId));
   };
   return (
     <div className="bg-main-400 h-full flex px-5 ">
@@ -170,7 +198,7 @@ const Player = () => {
             <MdSkipNext size={24} />
           </span>
           <span
-            onClick={() => setIsRepeat((prev) => !prev)}
+            onClick={handleRepeat}
             className={`${isRepeat ? "text-violet-500" : ""} cursor-pointer`}
           >
             <CiRepeat size={24} />
